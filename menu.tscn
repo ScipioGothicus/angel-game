@@ -1,0 +1,48 @@
+[gd_scene load_steps=2 format=3 uid="uid://c243mkp8olp0p"]
+
+[ext_resource type="Script" path="res://menu.gd" id="1_jngkq"]
+
+[node name="Menu" type="Node2D"]
+script = ExtResource("1_jngkq")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="PanelContainer" type="PanelContainer" parent="CanvasLayer"]
+anchors_preset = -1
+anchor_left = 0.25
+anchor_top = 0.25
+anchor_right = 0.75
+anchor_bottom = 0.75
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 75
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 75
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="Label" type="Label" parent="CanvasLayer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "3D Game"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HostButton" type="Button" parent="CanvasLayer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Host"
+
+[node name="JoinButton" type="Button" parent="CanvasLayer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Join"
+
+[node name="Address" type="LineEdit" parent="CanvasLayer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Enter IP Address Here"
+alignment = 1

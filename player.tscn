@@ -1,0 +1,55 @@
+[gd_scene load_steps=6 format=3 uid="uid://bmr8kmf05e5e0"]
+
+[ext_resource type="Script" path="res://player.gd" id="1_2a2ax"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_f1ml6"]
+size = Vector3(0.75, 2, 0.75)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_88ish"]
+size = Vector3(0.75, 1, 0.75)
+
+[sub_resource type="SphereMesh" id="SphereMesh_46mic"]
+radius = 0.25
+height = 0.5
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_tivvb"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath("freelook_pivot/pivot/camera:rotation")
+properties/2/spawn = true
+properties/2/replication_mode = 1
+
+[node name="player" type="CharacterBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+collision_layer = 0
+script = ExtResource("1_2a2ax")
+
+[node name="bonk_check" type="RayCast3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+target_position = Vector3(0, 2, 0)
+
+[node name="collision" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_f1ml6")
+
+[node name="crouch_collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_88ish")
+disabled = true
+
+[node name="freelook_pivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+
+[node name="pivot" type="Node3D" parent="freelook_pivot"]
+
+[node name="camera" type="Camera3D" parent="freelook_pivot/pivot"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0.3)
+mesh = SubResource("SphereMesh_46mic")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_tivvb")
