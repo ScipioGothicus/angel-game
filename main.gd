@@ -5,7 +5,7 @@ const PORT = 50993
 const WORLD_SCENE_PATH = "res://world.tscn"
 @onready var root = $"."
 @onready var main_menu = $Menu/CanvasLayer
-
+@onready var address = $Menu/CanvasLayer/PanelContainer/MarginContainer/VBoxContainer/Address
 # Called when the node enters the scene tree for the first time.
 
 func _ready():
@@ -29,6 +29,7 @@ func _on_host_button_pressed():
 	multiplayer.peer_disconnected.connect(world.remove_player)
 
 	world.add_player(multiplayer.get_unique_id())
+	world.upnp_setup(PORT)
 	
 	
 func _on_join_button_pressed():
@@ -37,5 +38,5 @@ func _on_join_button_pressed():
 	var world = load(WORLD_SCENE_PATH).instantiate()
 	root.add_child(world)
 	
-	enet_peer.create_client("localhost", PORT)
+	enet_peer.create_client(address.text, PORT)
 	multiplayer.multiplayer_peer = enet_peer
