@@ -3,10 +3,10 @@ extends Node3D
 var enet_peer = ENetMultiplayerPeer.new()
 const PORT = 50993
 const WORLD_SCENE_PATH = "res://world.tscn"
+
 @onready var root = $"."
 @onready var main_menu = $Menu/CanvasLayer
 @onready var address = $Menu/CanvasLayer/PanelContainer/MarginContainer/VBoxContainer/Address
-# Called when the node enters the scene tree for the first time.
 
 func _ready():
 	ResourceLoader.load_threaded_request(WORLD_SCENE_PATH)
@@ -21,15 +21,15 @@ func _on_host_button_pressed():
 	var world = load(WORLD_SCENE_PATH).instantiate()
 	root.add_child(world)
 	
-	print("ready")
-	
 	enet_peer.create_server(PORT)
 	multiplayer.multiplayer_peer = enet_peer
 	multiplayer.peer_connected.connect(world.add_player)
 	multiplayer.peer_disconnected.connect(world.remove_player)
 
 	world.add_player(multiplayer.get_unique_id())
-	world.upnp_setup(PORT)
+	
+	if not address.text:
+		world.upnp_setup(PORT)
 	
 	
 func _on_join_button_pressed():

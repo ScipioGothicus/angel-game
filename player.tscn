@@ -1,6 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://bmr8kmf05e5e0"]
+[gd_scene load_steps=11 format=3 uid="uid://bmr8kmf05e5e0"]
 
 [ext_resource type="Script" path="res://player.gd" id="1_2a2ax"]
+[ext_resource type="Texture2D" uid="uid://cij0pnswi74ym" path="res://windup.png" id="2_iwaq7"]
+[ext_resource type="Texture2D" uid="uid://cklk6bcawv13y" path="res://slap.png" id="3_k5tww"]
+[ext_resource type="AudioStream" uid="uid://4p8w73702d4a" path="res://slap.mp3" id="4_gip3t"]
+[ext_resource type="AudioStream" uid="uid://jobg17v4x3b7" path="res://woosh.mp3" id="5_vhmub"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_f1ml6"]
 size = Vector3(0.75, 2, 0.75)
@@ -8,9 +12,22 @@ size = Vector3(0.75, 2, 0.75)
 [sub_resource type="BoxShape3D" id="BoxShape3D_88ish"]
 size = Vector3(0.75, 1, 0.75)
 
-[sub_resource type="SphereMesh" id="SphereMesh_46mic"]
-radius = 0.25
-height = 0.5
+[sub_resource type="SpriteFrames" id="SpriteFrames_np71l"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_iwaq7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_k5tww")
+}, {
+"duration": 1.0,
+"texture": null
+}],
+"loop": false,
+"name": &"default",
+"speed": 5.0
+}]
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_tivvb"]
 properties/0/path = NodePath(".:position")
@@ -22,10 +39,18 @@ properties/1/replication_mode = 1
 properties/2/path = NodePath("freelook_pivot/pivot/camera:rotation")
 properties/2/spawn = true
 properties/2/replication_mode = 1
+properties/3/path = NodePath("mesh:scale")
+properties/3/spawn = true
+properties/3/replication_mode = 1
+properties/4/path = NodePath("mesh:position")
+properties/4/spawn = true
+properties/4/replication_mode = 1
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_yfapq"]
+lightmap_size_hint = Vector2i(17, 14)
 
 [node name="player" type="CharacterBody3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
-collision_layer = 0
 script = ExtResource("1_2a2ax")
 
 [node name="bonk_check" type="RayCast3D" parent="."]
@@ -47,9 +72,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 
 [node name="camera" type="Camera3D" parent="freelook_pivot/pivot"]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0.3)
-mesh = SubResource("SphereMesh_46mic")
+[node name="slap_sprite" type="AnimatedSprite3D" parent="freelook_pivot/pivot/camera"]
+transform = Transform3D(0.15, 0, 0, 0, 0.15, 0, 0, 0, 0.15, 0, -0.5, -0.94)
+visible = false
+offset = Vector2(500, 100)
+no_depth_test = true
+sprite_frames = SubResource("SpriteFrames_np71l")
+
+[node name="slap_ray" type="RayCast3D" parent="freelook_pivot/pivot/camera"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0999999, 0)
+target_position = Vector3(0, 0, -1.5)
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
 replication_config = SubResource("SceneReplicationConfig_tivvb")
+
+[node name="mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_yfapq")
+
+[node name="slap_sound" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("4_gip3t")
+attenuation_model = 3
+volume_db = -5.0
+
+[node name="woosh_sound" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("5_vhmub")

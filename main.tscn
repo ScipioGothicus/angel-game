@@ -48,6 +48,7 @@ text = "Join"
 layout_mode = 2
 placeholder_text = "Enter IP Address Here"
 alignment = 1
+caret_blink = true
 
 [connection signal="pressed" from="Menu/CanvasLayer/PanelContainer/MarginContainer/VBoxContainer/HostButton" to="." method="_on_host_button_pressed"]
 [connection signal="pressed" from="Menu/CanvasLayer/PanelContainer/MarginContainer/VBoxContainer/JoinButton" to="." method="_on_join_button_pressed"]

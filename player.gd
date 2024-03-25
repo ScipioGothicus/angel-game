@@ -13,10 +13,12 @@ const FREELOOK_TILT = 5.0
 # slide variables
 var slide_timer = 0.0
 @export var slide_max = 1.0 # seconds
-var slide_vector = Vector2.ZERO
-@export var slide_coyote_max = 0.5
-var slide_coyote = 0.0 # allows a little bit of time to press crouch after releasing sprint to slide
 @export var slide_speed = 5.0
+var slide_vector = Vector2.ZERO
+
+
+var slide_coyote = 0.0 # allows a little bit of time to press crouch after releasing sprint to slide
+@export var slide_coyote_max = 0.5
 
 const JUMP_VELOCITY = 6
 const CROUCH_DEPTH = -0.5
@@ -27,6 +29,8 @@ var crouching = false
 var freelooking = false
 var sliding = false
 
+var slap_normal = Vector3(1.0, 1.0, 1.0)
+
 # access various nodes
 @onready var head_pivot = $freelook_pivot/pivot
 @onready var freelook_pivot = $freelook_pivot
@@ -35,6 +39,11 @@ var sliding = false
 @onready var crouch_collision = $crouch_collision
 @onready var bonk_check = $bonk_check
 @onready var debug_label = $"../RichTextLabel"
+@onready var mesh = $mesh
+@onready var slap_sprite = $freelook_pivot/pivot/camera/slap_sprite
+@onready var slap_ray = $freelook_pivot/pivot/camera/slap_ray
+@onready var slap_sound = $slap_sound
+@onready var woosh_sound = $woosh_sound
 
 var mouse_sensitivity = 0.2
 # Get the gravity from the project settings to be synced with RigidBody nodes.
@@ -54,7 +63,8 @@ func _ready():
 	# don't execute code if you are not a given player
 	if not is_multiplayer_authority(): return
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-
+	position = Vector3(0.0, 25.0, 0.0)
+	
 	camera.current = true
 
 func _input(event):
@@ -110,6 +120,9 @@ func _physics_process(delta):
 	if Input.is_action_pressed("crouch") or sliding:
 		# squat the camera down
 		head_pivot.position.y = lerp(head_pivot.position.y, CROUCH_DEPTH, delta*lerp_speed)
+		# scale and move the mesh as well to look like crouching
+		mesh.scale.y = lerp(mesh.scale.y, 0.5, delta * lerp_speed)
+		mesh.position.y = lerp(mesh.position.y, -0.5, delta * lerp_speed)
 		# switch collision shapes to make crouch collision small
 		collision.disabled = true
 		crouch_collision.disabled = false
@@ -124,8 +137,11 @@ func _physics_process(delta):
 		crouching = true
 		sprinting = false
 	# ensure there is room to stand up; if so, stand up
+	# todo: make this not check every frame
 	elif !bonk_check.is_colliding():
 		head_pivot.position.y = lerp(head_pivot.position.y, 0.0, delta*lerp_speed)
+		mesh.scale.y = lerp(mesh.scale.y, 1.0, delta * lerp_speed)
+		mesh.position.y = lerp(mesh.position.y, 0.0, delta * lerp_speed)
 		collision.disabled = false
 		crouch_collision.disabled = true
 		current_speed = lerp(current_speed, SPEED, delta*lerp_speed)
@@ -137,6 +153,7 @@ func _physics_process(delta):
 		if slide_timer <= 0.0:
 			sliding = false
 		freelooking = false
+		
 
 	# handle freelooking
 	if Input.is_action_pressed("freelook") or sliding:
@@ -150,6 +167,19 @@ func _physics_process(delta):
 		camera.rotation.z = lerp(camera.rotation.z, 0.0, delta*lerp_speed)
 		freelooking = false
 	
+	# handle slapping
+	if Input.is_action_pressed("primary_action"):
+		slap_sprite.visible = true
+		slap_sprite.frame = 0
+	if Input.is_action_just_released("primary_action"):
+		slap_sprite.frame=1
+		slap_sprite.play("default")
+		if slap_ray.is_colliding():
+			if slap_ray.get_collider().has_method("get_slapped"):
+				slap_sound.play()
+				slap_ray.get_collider().get_slapped.rpc_id(slap_ray.get_collider().get_multiplayer_authority(), slap_ray.get_collision_normal())
+		else:
+			woosh_sound.play()
 	# handle ground and midair movement
 	if is_on_floor():
 		direction = lerp(direction, (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized(), delta*lerp_speed)
@@ -171,6 +201,7 @@ func _physics_process(delta):
 			# make the speed gradually slow by multiplying by the slide timer
 			velocity.x = direction.x * (slide_timer + 0.1) * slide_speed
 			velocity.z = direction.z * (slide_timer + 0.1) * slide_speed
+			
 	# otherwise, gradually slow down
 	else:
 		velocity.x = move_toward(velocity.x, 0, current_speed)
@@ -179,3 +210,8 @@ func _physics_process(delta):
 	move_and_slide()
 	# debug GUI text
 	debug_label.text = "Slide Coyote Time: %s" % slide_coyote
+
+@rpc("any_peer")
+func get_slapped(normal):
+	direction = -normal * 5.0
+	velocity.y = 6.0

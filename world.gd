@@ -20,7 +20,6 @@ func upnp_setup(port):
 	var discover_result = upnp.discover()
 	assert(discover_result == UPNP.UPNP_RESULT_SUCCESS, \
 		"UPNP Discover failed with error: %s" % discover_result)
-	
 		
 	assert(upnp.get_gateway() and upnp.get_gateway().is_valid_gateway(), \
 		"UPNP Invalid gateway")
@@ -30,3 +29,9 @@ func upnp_setup(port):
 		"UPNP Port Mapping failed with error: %s" % discover_result)
 	
 	print("UPNP connection successful with join address %s" % upnp.query_external_address())
+
+
+func _on_world_border_body_entered(body):
+	if body is CharacterBody3D:
+		# todo: dont hardcode this
+		body.position = Vector3(0.0, 25.0, 0.0)
