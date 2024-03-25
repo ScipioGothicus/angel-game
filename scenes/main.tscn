@@ -1,9 +1,9 @@
 [gd_scene load_steps=2 format=3 uid="uid://dxl3bobkys53k"]
 
-[ext_resource type="Script" path="res://main.gd" id="1_0thll"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_1xfec"]
 
 [node name="Root" type="Node3D"]
-script = ExtResource("1_0thll")
+script = ExtResource("1_1xfec")
 
 [node name="Menu" type="Node2D" parent="."]
 

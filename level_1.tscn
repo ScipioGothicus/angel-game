@@ -1,9 +1,0 @@
-[gd_scene load_steps=3 format=3 uid="uid://db4crtlgrhgpa"]
-
-[ext_resource type="PackedScene" uid="uid://dfhk03ta1qfbm" path="res://level1.blend" id="1_1ds6k"]
-[ext_resource type="Material" uid="uid://cqg6w1syjf63p" path="res://ground_material.tres" id="2_we7mu"]
-
-[node name="level1" instance=ExtResource("1_1ds6k")]
-
-[node name="Plane" parent="." index="0"]
-surface_material_override/0 = ExtResource("2_we7mu")

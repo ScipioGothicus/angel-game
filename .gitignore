@@ -1,5 +1,8 @@
 # Godot-specific ignores
 *.import
+*.exe
+*.pck
+*.zip
 .import/
 .godot/
 export.cfg

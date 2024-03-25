@@ -4,10 +4,12 @@ const SPEED = 5.0
 const CROUCH_SPEED = 2.5
 const RUN_SPEED = 7.5
 
+# change FOV of camera depending on movement state
 const SPRINT_FOV = 90.0
 const CAM_FOV = 75.0
 const CROUCH_FOV = 60.0
 
+# adds a "head tilt" effect when freelooking
 const FREELOOK_TILT = 5.0
 
 # slide variables
@@ -16,8 +18,8 @@ var slide_timer = 0.0
 @export var slide_speed = 5.0
 var slide_vector = Vector2.ZERO
 
-
-var slide_coyote = 0.0 # allows a little bit of time to press crouch after releasing sprint to slide
+# allows a little bit of time to press crouch after releasing sprint to slide
+var slide_coyote = 0.0
 @export var slide_coyote_max = 0.5
 
 const JUMP_VELOCITY = 6
@@ -28,8 +30,6 @@ var sprinting = false
 var crouching = false
 var freelooking = false
 var sliding = false
-
-var slap_normal = Vector3(1.0, 1.0, 1.0)
 
 # access various nodes
 @onready var head_pivot = $freelook_pivot/pivot
@@ -45,6 +45,7 @@ var slap_normal = Vector3(1.0, 1.0, 1.0)
 @onready var slap_sound = $slap_sound
 @onready var woosh_sound = $woosh_sound
 
+# look sensitivity
 var mouse_sensitivity = 0.2
 # Get the gravity from the project settings to be synced with RigidBody nodes.
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -53,22 +54,31 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var lerp_speed = 10.0
 var air_lerp = 2.5
 
+# player movement speed constant
 var current_speed = SPEED
+# player's desired movement direction, goes in hand with velocity
 var direction = Vector3.ZERO
 
 func _enter_tree():
+	# the server assigns a player object to each computer on network
 	set_multiplayer_authority(str(name).to_int())
 
 func _ready():
-	# don't execute code if you are not a given player
+	# don't execute code if you are not the player object connected to your computer
 	if not is_multiplayer_authority(): return
+	
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	# set position of players above the level
 	position = Vector3(0.0, 25.0, 0.0)
 	
+	# set the camera to current after authority has been assigned to resolve bugs
 	camera.current = true
 
 func _input(event):
 	if not is_multiplayer_authority(): return
+	
+	# check for mouse movement
 	if event is InputEventMouseMotion:
 		# freelook around a different pivot to ensure the player does not rotate
 		if freelooking:
@@ -84,7 +94,7 @@ func _input(event):
 func _physics_process(delta):
 	if not is_multiplayer_authority(): return
 	
-	# Get the input direction and handle the movement/deceleration.
+	# get the input direction and handle the movement/deceleration
 	var input_dir = Input.get_vector("left", "right", "up", "down")
 	
 	# Handle jump.
@@ -93,10 +103,11 @@ func _physics_process(delta):
 		if sliding:
 			# don't jump fully; do a cute little hop instead
 			velocity.y = JUMP_VELOCITY/2.5
-			sliding = false
 			# we don't want to be able to keep sliding; reset the coyote timer, too
+			sliding = false
 			slide_coyote = 0.0
 		else:
+			# jump normally
 			velocity.y = JUMP_VELOCITY
 	
 	# handle sprinting
@@ -149,12 +160,13 @@ func _physics_process(delta):
 		
 	# handle sliding and ending sliding
 	if sliding:
+		# count down how long the player remains sliding
 		slide_timer -= delta
+		# stop sliding (and freelooking) when the timer is up
 		if slide_timer <= 0.0:
 			sliding = false
 		freelooking = false
 		
-
 	# handle freelooking
 	if Input.is_action_pressed("freelook") or sliding:
 		freelooking = true
@@ -170,25 +182,38 @@ func _physics_process(delta):
 	# handle slapping
 	if Input.is_action_pressed("primary_action"):
 		slap_sprite.visible = true
+		# hold the first sprite when primary action is held
 		slap_sprite.frame = 0
 	if Input.is_action_just_released("primary_action"):
+		# move to next sprite, then start playing the animation to make the anim responsive
 		slap_sprite.frame=1
 		slap_sprite.play("default")
+		# if another player is within bounds...
 		if slap_ray.is_colliding():
 			if slap_ray.get_collider().has_method("get_slapped"):
 				slap_sound.play()
+				# get what player was slapped and at what angle, position, etc. with a normal
 				slap_ray.get_collider().get_slapped.rpc_id(slap_ray.get_collider().get_multiplayer_authority(), slap_ray.get_collision_normal())
+			else:
+				# if not a player object, woosh
+				woosh_sound.play()
 		else:
+			# if you just completely miss anyways
 			woosh_sound.play()
+	
 	# handle ground and midair movement
 	if is_on_floor():
+		# smooth movement (acceleration/deceleration) via lerp and a lerp movement speed
 		direction = lerp(direction, (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized(), delta*lerp_speed)
 	else:
+		# calculate gravity
 		velocity.y -= gravity * delta
+		# make movement in midair much less responsive for realism via a lerp function and constant speed (air_lerp)
 		direction = lerp(direction, (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized(), delta*air_lerp)
 	
 	# handle sliding movement
 	if sliding:
+		# slide towards movement direction but don't allow control
 		direction = (transform.basis * Vector3(slide_vector.x, 0.0, slide_vector.y)).normalized()
 	
 	# if moving
@@ -199,6 +224,7 @@ func _physics_process(delta):
 		# if moving by sliding
 		if sliding:
 			# make the speed gradually slow by multiplying by the slide timer
+			# the .1 is to add some speed to the sliding on initiation & falloff
 			velocity.x = direction.x * (slide_timer + 0.1) * slide_speed
 			velocity.z = direction.z * (slide_timer + 0.1) * slide_speed
 			
@@ -213,5 +239,8 @@ func _physics_process(delta):
 
 @rpc("any_peer")
 func get_slapped(normal):
+	# set the player's direction to be the negative normal (move away from the slapper) multiplied by a constant speed
+	# the normal is passed earlier by the raycast collision
 	direction = -normal * 5.0
+	# move upwards too instead of just in a direction (the normal doesn't contain a y value)
 	velocity.y = 6.0

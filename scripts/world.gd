@@ -1,22 +1,23 @@
 extends Node3D
 
-const PLAYER_SCENE_PATH = "player.tscn"
+const PLAYER_SCENE_PATH = "res://scenes/player.tscn"
 
 func add_player(peer_id):
 	var player = load(PLAYER_SCENE_PATH).instantiate()
 	player.name = str(peer_id)
 	add_child(player)
-	print("player added")
 
+# used for disconnects
 func remove_player(peer_id):
 	var player = get_node_or_null(str(peer_id))
+	# remove player if it exists
 	if player:
 		player.queue_free()
-
 
 func upnp_setup(port):
 	var upnp = UPNP.new()
 	
+	# todo: add more detailed error messages
 	var discover_result = upnp.discover()
 	assert(discover_result == UPNP.UPNP_RESULT_SUCCESS, \
 		"UPNP Discover failed with error: %s" % discover_result)

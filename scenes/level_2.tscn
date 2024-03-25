@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://brtedpkxsooqh"]
 
-[ext_resource type="PackedScene" uid="uid://bss78osaxk1te" path="res://level2.blend" id="1_uiekc"]
+[ext_resource type="PackedScene" uid="uid://bss78osaxk1te" path="res://models/level2.blend" id="1_uiekc"]
 
 [node name="level2" instance=ExtResource("1_uiekc")]
 

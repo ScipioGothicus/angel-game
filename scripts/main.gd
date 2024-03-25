@@ -2,7 +2,7 @@ extends Node3D
 
 var enet_peer = ENetMultiplayerPeer.new()
 const PORT = 50993
-const WORLD_SCENE_PATH = "res://world.tscn"
+const WORLD_SCENE_PATH = "res://scenes/world.tscn"
 
 @onready var root = $"."
 @onready var main_menu = $Menu/CanvasLayer
