@@ -30,6 +30,7 @@ var sprinting = false
 var crouching = false
 var freelooking = false
 var sliding = false
+var double_jumped = false
 
 # access various nodes
 @onready var head_pivot = $freelook_pivot/pivot
@@ -109,6 +110,9 @@ func _physics_process(delta):
 		else:
 			# jump normally
 			velocity.y = JUMP_VELOCITY
+	elif Input.is_action_just_pressed("jump") and not is_on_floor() and not double_jumped:
+		velocity.y = JUMP_VELOCITY
+		double_jumped = true
 	
 	# handle sprinting
 	# you cannot crouch and sprint/slide at the same time
@@ -203,6 +207,8 @@ func _physics_process(delta):
 	
 	# handle ground and midair movement
 	if is_on_floor():
+		# reset double jump check
+		double_jumped = false
 		# smooth movement (acceleration/deceleration) via lerp and a lerp movement speed
 		direction = lerp(direction, (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized(), delta*lerp_speed)
 	else:
