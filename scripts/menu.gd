@@ -1,6 +1,6 @@
 extends Node2D
 
-const MAIN_SCENE_PATH = "main.tscn"
+const MAIN_SCENE_PATH = "res://scenes/main.tscn"
 
 func _ready():
 	ResourceLoader.load_threaded_request(MAIN_SCENE_PATH)
