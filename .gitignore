@@ -3,6 +3,8 @@
 *.exe
 *.pck
 *.zip
+*.tmp
+*.unwrap_cache
 .import/
 .godot/
 export.cfg
