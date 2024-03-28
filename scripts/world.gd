@@ -2,6 +2,8 @@ extends Node3D
 
 const PLAYER_SCENE_PATH = "res://scenes/player.tscn"
 
+@export var player_spawn_position = Vector3(0.0, 25.0, 0.0)
+
 func add_player(peer_id):
 	var player = load(PLAYER_SCENE_PATH).instantiate()
 	player.name = str(peer_id)
@@ -13,7 +15,7 @@ func remove_player(peer_id):
 	# remove player if it exists
 	if player:
 		player.queue_free()
-
+		
 func upnp_setup(port):
 	var upnp = UPNP.new()
 	
@@ -34,5 +36,4 @@ func upnp_setup(port):
 
 func _on_world_border_body_entered(body):
 	if body is CharacterBody3D:
-		# todo: dont hardcode this
-		body.position = Vector3(0.0, 25.0, 0.0)
+		body.position = player_spawn_position

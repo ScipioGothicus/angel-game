@@ -31,6 +31,7 @@ var crouching = false
 var freelooking = false
 var sliding = false
 var double_jumped = false
+var paused = false
 
 # access various nodes
 @onready var head_pivot = $freelook_pivot/pivot
@@ -45,6 +46,7 @@ var double_jumped = false
 @onready var slap_ray = $freelook_pivot/pivot/camera/slap_ray
 @onready var slap_sound = $slap_sound
 @onready var woosh_sound = $woosh_sound
+@onready var pause_menu = $pause_menu/CanvasLayer
 
 # look sensitivity
 var mouse_sensitivity = 0.2
@@ -80,7 +82,7 @@ func _input(event):
 	if not is_multiplayer_authority(): return
 	
 	# check for mouse movement
-	if event is InputEventMouseMotion:
+	if event is InputEventMouseMotion and not paused:
 		# freelook around a different pivot to ensure the player does not rotate
 		if freelooking:
 			freelook_pivot.rotate_y(deg_to_rad(-event.relative.x * mouse_sensitivity))
@@ -91,15 +93,35 @@ func _input(event):
 		# head turning
 		head_pivot.rotate_x(deg_to_rad(-event.relative.y * mouse_sensitivity))
 		head_pivot.rotation.x = clampf(head_pivot.rotation.x, deg_to_rad(-89), deg_to_rad(89))
-		
+
+func _process(_delta):
+	if not multiplayer.has_multiplayer_peer(): return
+	if not is_multiplayer_authority(): return
+	
+	if Input.is_action_just_pressed("pause") and not paused:
+		pause_menu.visible = true
+		paused = true
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	elif Input.is_action_just_pressed("pause") and paused:
+		pause_menu.visible = false
+		paused = false
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
 func _physics_process(delta):
+	# fixes errors when _physics_process tries to run another cycle after
+	# the multiplayer peer has been disconnected
+	if not multiplayer.has_multiplayer_peer(): return
 	if not is_multiplayer_authority(): return
 	
 	# get the input direction and handle the movement/deceleration
-	var input_dir = Input.get_vector("left", "right", "up", "down")
-	
+	var input_dir 
+	if not paused:
+		input_dir = Input.get_vector("left", "right", "up", "down")
+	else:
+		input_dir = Vector2.ZERO
+		
 	# Handle jump.
-	if Input.is_action_just_pressed("jump") and is_on_floor():
+	if (Input.is_action_just_pressed("jump") and is_on_floor()) and not paused:
 		# cancel sliding with a jump
 		if sliding:
 			# don't jump fully; do a cute little hop instead
@@ -110,13 +132,13 @@ func _physics_process(delta):
 		else:
 			# jump normally
 			velocity.y = JUMP_VELOCITY
-	elif Input.is_action_just_pressed("jump") and not is_on_floor() and not double_jumped:
+	elif (Input.is_action_just_pressed("jump") and not is_on_floor() and not double_jumped) and not paused:
 		velocity.y = JUMP_VELOCITY
 		double_jumped = true
 	
 	# handle sprinting
 	# you cannot crouch and sprint/slide at the same time
-	if Input.is_action_pressed("sprint") and not sliding and not crouching:
+	if (Input.is_action_pressed("sprint") and not sliding and not crouching) and not paused:
 		# start the sliding coyote timer after sprinting
 		slide_coyote = slide_coyote_max
 		current_speed = lerp(current_speed, RUN_SPEED, delta*lerp_speed)
@@ -132,7 +154,7 @@ func _physics_process(delta):
 		sprinting = false
 
 	# handle crouching
-	if Input.is_action_pressed("crouch") or sliding:
+	if (Input.is_action_pressed("crouch") or sliding) and not paused:
 		# squat the camera down
 		head_pivot.position.y = lerp(head_pivot.position.y, CROUCH_DEPTH, delta*lerp_speed)
 		# scale and move the mesh as well to look like crouching
@@ -172,7 +194,7 @@ func _physics_process(delta):
 		freelooking = false
 		
 	# handle freelooking
-	if Input.is_action_pressed("freelook") or sliding:
+	if (Input.is_action_pressed("freelook") or sliding) and not paused:
 		freelooking = true
 		# rotate the camera to simulate looking over a shoulder
 		freelook_pivot.rotation.y = clampf(freelook_pivot.rotation.y, deg_to_rad(-119), deg_to_rad(119))
@@ -183,18 +205,28 @@ func _physics_process(delta):
 		camera.rotation.z = lerp(camera.rotation.z, 0.0, delta*lerp_speed)
 		freelooking = false
 	
+	# fixes a bug where holding left click and pausing keeps the sprite visible
+	if slap_sprite.visible and paused:
+		slap_sprite.visible = false
+		slap_sprite.frame = 0
+	
 	# handle slapping
-	if Input.is_action_pressed("primary_action"):
+	if Input.is_action_pressed("primary_action") and not paused:
 		slap_sprite.visible = true
 		# hold the first sprite when primary action is held
 		slap_sprite.frame = 0
-	if Input.is_action_just_released("primary_action"):
+	if Input.is_action_just_released("primary_action") and not paused:
 		# move to next sprite, then start playing the animation to make the anim responsive
 		slap_sprite.frame=1
 		slap_sprite.play("default")
 		# if another player is within bounds...
+		
 		if slap_ray.is_colliding():
-			if slap_ray.get_collider().has_method("get_slapped"):
+			# makes code less verbose
+			var slapped_entity = slap_ray.get_collider()
+			# make sure the entity getting slapped is not self
+			if slapped_entity.has_method("get_slapped") and not slapped_entity.name == name:
+				# play the slap sound for the slapper
 				slap_sound.play()
 				# get what player was slapped and at what angle, position, etc. with a normal
 				slap_ray.get_collider().get_slapped.rpc_id(slap_ray.get_collider().get_multiplayer_authority(), slap_ray.get_collision_normal())
@@ -247,6 +279,21 @@ func _physics_process(delta):
 func get_slapped(normal):
 	# set the player's direction to be the negative normal (move away from the slapper) multiplied by a constant speed
 	# the normal is passed earlier by the raycast collision
-	direction = -normal * 5.0
+	direction = -normal * 3.0
+	# play the slap sound for the entity being slapped
+	slap_sound.play()
 	# move upwards too instead of just in a direction (the normal doesn't contain a y value)
-	velocity.y = 6.0
+	velocity.y = 4.0
+
+
+func _on_disconnect_pressed():
+	if multiplayer.is_server():
+		multiplayer.server_disconnected.emit()
+	elif not multiplayer.is_server() and multiplayer.has_multiplayer_peer():
+		multiplayer.multiplayer_peer.close()
+		multiplayer.multiplayer_peer = null
+		var root = get_tree().root.get_node_or_null("Root")
+		var world = get_tree().root.get_node_or_null("Root/World")
+		root.remove_child(world)
+	
+

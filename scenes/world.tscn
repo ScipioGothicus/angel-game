@@ -1,9 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://bllivlhad7pjh"]
+[gd_scene load_steps=8 format=3 uid="uid://bllivlhad7pjh"]
 
 [ext_resource type="Script" path="res://scripts/world.gd" id="1_81mcs"]
 [ext_resource type="Texture2D" uid="uid://bi33kktv0tw0a" path="res://materials/industrial_sunset_puresky_4k.exr" id="2_1wgd5"]
 [ext_resource type="PackedScene" uid="uid://brtedpkxsooqh" path="res://scenes/level_2.tscn" id="3_givfo"]
-[ext_resource type="Script" path="res://scripts/world_border.gd" id="4_yta1e"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_ngpqo"]
 panorama = ExtResource("2_1wgd5")
@@ -35,10 +34,10 @@ _spawnable_scenes = PackedStringArray("res://scenes/player.tscn")
 spawn_path = NodePath("..")
 
 [node name="level2" parent="." instance=ExtResource("3_givfo")]
+transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, 0, 0, 0)
 
 [node name="world_border" type="Area3D" parent="."]
 transform = Transform3D(50, 0, 0, 0, 50, 0, 0, 0, 50, 0, -5, 0)
-script = ExtResource("4_yta1e")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="world_border"]
 shape = SubResource("WorldBoundaryShape3D_v8n2t")
