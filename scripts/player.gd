@@ -285,15 +285,23 @@ func get_slapped(normal):
 	# move upwards too instead of just in a direction (the normal doesn't contain a y value)
 	velocity.y = 4.0
 
-
+# when the disconnect button is pressed 
 func _on_disconnect_pressed():
+	# send the "server disconnected" signal
 	if multiplayer.is_server():
 		multiplayer.server_disconnected.emit()
+	# if this current connection exists and the instance is not the server
 	elif not multiplayer.is_server() and multiplayer.has_multiplayer_peer():
+		# close the connection and clear it
 		multiplayer.multiplayer_peer.close()
 		multiplayer.multiplayer_peer = null
+		# get the root, the menu to show, and the world to remove
 		var root = get_tree().root.get_node_or_null("Root")
+		var menu = get_tree().root.get_node_or_null("Root/Menu/CanvasLayer")
 		var world = get_tree().root.get_node_or_null("Root/World")
+		# remove the world once cleaned up so we can re-instance it on reconnection
 		root.remove_child(world)
-	
-
+		# delete the world so we don't leave memory
+		world.queue_free()
+		# show the main menu again
+		menu.show()
